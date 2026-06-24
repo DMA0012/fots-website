@@ -716,6 +716,10 @@
       <li><a href="#contact">Contact</a></li>
       <li><a href="#newsletter" class="nav-cta">Join the Cult</a></li>
     </ul>
+    <div class="cart-icon" onclick="openCart()">
+  🛍
+  <span id="cartCount">0</span>
+</div>
     <div class="hamburger" id="hamburger" onclick="toggleNav()">
       <span></span><span></span><span></span>
     </div>
@@ -820,7 +824,13 @@
           <div class="product-sub">Oversized / Unisex</div>
           <div class="product-footer">
             <div class="product-price">₦18,500</div>
-            <button class="product-add">Add to Bag</button>
+            <button  class="product-add"
+              data-name="Spirit Tee Vol.1"
+              data-sub="Oversized / Unisex"
+              data-price="18500"
+              data-color="c1">
+              Add to Bag
+            </button>
           </div>
         </div>
       </div>
@@ -835,7 +845,13 @@
           <div class="product-sub">Heavy Fleece / Unisex</div>
           <div class="product-footer">
             <div class="product-price">₦32,000</div>
-            <button class="product-add">Add to Bag</button>
+            <button  class="product-add"
+              data-name="Soul Hoodie"
+              data-sub="Heavy Fleece / Unisex"
+              data-price="32000"
+              data-color="c2">
+              Add to Bag
+            </button>
           </div>
         </div>
       </div>
@@ -850,7 +866,13 @@
           <div class="product-sub">Wide Leg / Washed</div>
           <div class="product-footer">
             <div class="product-price">₦27,500</div>
-            <button class="product-add">Add to Bag</button>
+            <button class="product-add"
+              data-name="Vintage Cargo"
+              data-name="Wide Leg / Washed"
+              data-price="27500"
+              data-color="c3">
+              Add to Bag
+            </button>
           </div>
         </div>
       </div>
@@ -864,7 +886,13 @@
           <div class="product-sub">5-Panel / Adjustable</div>
           <div class="product-footer">
             <div class="product-price">₦9,000</div>
-            <button class="product-add">Add to Bag</button>
+            <button class="product-add"
+              0data-name="Spirit Cap"
+              data-sub="5-Panel / Adjustable"
+              data-price="9000"
+              data-color="c1">
+              Add to Bag
+            </button>
           </div>
         </div>
       </div>
@@ -998,7 +1026,29 @@
       <button type="button">Subscribe</button>
     </div>
   </section>
+  <div id="cartOverlay"></div>
+  
+  <div id="cartDrawer">
 
+  <div class="cart-header">
+    <h3>Your Bag</h3>
+    <button onclick="closeCart()">✕</button>
+  </div>
+
+  <div id="cartItems"></div>
+
+  <div id="cartFooter">
+    <div class="cart-total">
+      Total:
+      <span id="cartSubtotal">₦0</span>
+    </div>
+    
+    <button onclick="openCheckout()">
+      Checkout
+    </button>
+  </div>
+
+</div>
   <!-- FOOTER -->
   <footer>
     <div class="footer-grid">
@@ -1086,6 +1136,12 @@
     // Add to bag feedback
     document.querySelectorAll('.product-add').forEach(btn => {
       btn.addEventListener('click', function() {
+        addToCart(
+          this.dataset.name,
+          this.dataset.sub,
+          Number(this.dataset.price),
+          this.dataset.color
+        );
         const orig = this.textContent;
         this.textContent = 'Added ✓';
         this.style.background = '#00A89D';
@@ -1095,7 +1151,7 @@
         }, 2000);
       });
     });
-  </script>
+  <-script>
   // ── CART STATE ──
     let cart = [];
     let shippingCost = 0;
@@ -1270,5 +1326,6 @@
       setTimeout(() => { this.textContent = 'Send Message'; this.style.background = ''; }, 3500);
     });
   </script>
+  <script src="https://js.paystack.co/v1/inline.js"></script>
 </body>
 </html>
