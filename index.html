@@ -1096,5 +1096,179 @@
       });
     });
   </script>
+  // ── CART STATE ──
+    let cart = [];
+    let shippingCost = 0;
+
+    function fmt(n) { return '₦' + n.toLocaleString(); }
+
+    function cartTotal() { return cart.reduce((s, i) => s + i.price * i.qty, 0); }
+
+    function grandTotal() { return cartTotal() + shippingCost; }
+
+    // ── ADD TO CART ──
+    function addToCart(name, sub, price, color) {
+      const existing = cart.find(i => i.name === name);
+      if (existing) { existing.qty++; }
+      else { cart.push({ name, sub, price, color, qty: 1 }); }
+      renderCart();
+      openCart();
+    }
+
+    // ── RENDER CART ──
+    function renderCart() {
+      const count = cart.reduce((s, i) => s + i.qty, 0);
+      document.getElementById('cartCount').textContent = count;
+      const el = document.getElementById('cartItems');
+      const footer = document.getElementById('cartFooter');
+      if (cart.length === 0) {
+        el.innerHTML = '<div class="cart-empty"><div class="cart-empty-icon">🛍</div><p>Your bag is empty</p></div>';
+        footer.style.display = 'none';
+        return;
+      }
+      footer.style.display = 'block';
+      el.innerHTML = cart.map((item, idx) => `
+        <div class="cart-item">
+          <div class="cart-item-color ${item.color}">FOTS</div>
+          <div class="cart-item-info">
+            <div class="cart-item-name">${item.name}</div>
+            <div class="cart-item-sub">${item.sub}</div>
+            <div class="cart-item-price">${fmt(item.price)}</div>
+            <div class="cart-item-controls">
+              <button class="qty-btn" onclick="changeQty(${idx},-1)">−</button>
+              <span class="qty-val">${item.qty}</span>
+              <button class="qty-btn" onclick="changeQty(${idx},1)">+</button>
+            </div>
+          </div>
+          <button class="cart-item-remove" onclick="removeItem(${idx})">🗑</button>
+        </div>
+      `).join('');
+      document.getElementById('cartSubtotal').textContent = fmt(cartTotal());
+    }
+
+    function changeQty(idx, delta) {
+      cart[idx].qty += delta;
+      if (cart[idx].qty <= 0) cart.splice(idx, 1);
+      renderCart();
+    }
+
+    function removeItem(idx) { cart.splice(idx, 1); renderCart(); }
+
+    // ── CART OPEN/CLOSE ──
+    function openCart() {
+      document.getElementById('cartOverlay').classList.add('open');
+      document.getElementById('cartDrawer').classList.add('open');
+    }
+    function closeCart() {
+      document.getElementById('cartOverlay').classList.remove('open');
+      document.getElementById('cartDrawer').classList.remove('open');
+    }
+
+    // ── CHECKOUT ──
+    function openCheckout() {
+      if (cart.length === 0) return;
+      closeCart();
+      renderOrderSummary();
+      document.getElementById('checkoutOverlay').classList.add('open');
+    }
+    function closeCheckout() { document.getElementById('checkoutOverlay').classList.remove('open'); }
+
+    function renderOrderSummary() {
+      const lines = cart.map(i => `
+        <div class="order-line">
+          <span class="order-line-name">${i.name} <span class="order-line-qty">x${i.qty}</span></span>
+          <span class="order-line-price">${fmt(i.price * i.qty)}</span>
+        </div>
+      `).join('');
+      document.getElementById('orderSummary').innerHTML = `
+        <div class="order-summary-title">Items in your order</div>
+        ${lines}
+      `;
+      updateOrderTotal();
+    }
+
+    function updateShipping(cost, selectedId) {
+      shippingCost = cost;
+      ['ship1','ship2','ship3'].forEach(id => document.getElementById(id).classList.remove('selected'));
+      document.getElementById(selectedId).classList.add('selected');
+      updateOrderTotal();
+    }
+
+    function updateOrderTotal() {
+      document.getElementById('orderTotalVal').textContent = fmt(grandTotal());
+    }
+
+    // ── PAYSTACK ──
+    function payWithPaystack() {
+      const email = document.getElementById('chkEmail').value.trim();
+      const firstName = document.getElementById('chkFirstName').value.trim();
+      const phone = document.getElementById('chkPhone').value.trim();
+      if (!email || !firstName) {
+        alert('Please fill in your name and email to continue.');
+        return;
+      }
+      if (cart.length === 0) { alert('Your cart is empty.'); return; }
+
+      // NOTE: Replace 'pk_test_xxxxxxxxxx' with your actual Paystack public key
+      const handler = PaystackPop.setup({
+        key: 'pk_test_xxxxxxxxxx',
+        email: email,
+        amount: grandTotal() * 100, // Paystack uses kobo
+        currency: 'NGN',
+        ref: 'FOTS_' + Math.floor(Math.random() * 1000000000),
+        metadata: {
+          custom_fields: [
+            { display_name: 'Customer Name', variable_name: 'customer_name', value: firstName },
+            { display_name: 'Phone', variable_name: 'phone', value: phone },
+            { display_name: 'Items', variable_name: 'items', value: cart.map(i => `${i.name} x${i.qty}`).join(', ') }
+          ]
+        },
+        callback: function(response) {
+          closeCheckout();
+          cart = [];
+          renderCart();
+          document.getElementById('successOverlay').classList.add('open');
+        },
+        onClose: function() {
+          // user closed payment popup
+        }
+      });
+      handler.openIframe();
+    }
+
+    function closeSuccess() {
+      document.getElementById('successOverlay').classList.remove('open');
+    }
+
+    // ── OTHER UI ──
+    function toggleNav() { document.getElementById('navLinks').classList.toggle('open'); }
+
+    document.querySelector('.nl-form button').addEventListener('click', function() {
+      const input = document.querySelector('.nl-form input');
+      if (input.value) {
+        this.textContent = "You're In ✓";
+        this.style.background = '#00A89D';
+        input.value = '';
+        setTimeout(() => { this.textContent = 'Subscribe'; this.style.background = ''; }, 3000);
+      }
+    });
+
+    document.getElementById('formSubmit').addEventListener('click', function() {
+      const form = document.getElementById('contactForm');
+      const inputs = form.querySelectorAll('input[required]');
+      let valid = true;
+      inputs.forEach(i => { if (!i.value) valid = false; });
+      if (!valid) {
+        this.textContent = 'Fill required fields';
+        this.style.background = '#D62828';
+        setTimeout(() => { this.textContent = 'Send Message'; this.style.background = ''; }, 2500);
+        return;
+      }
+      this.textContent = 'Message Sent ✓';
+      this.style.background = '#00A89D';
+      form.querySelectorAll('input, textarea, select').forEach(el => el.value = '');
+      setTimeout(() => { this.textContent = 'Send Message'; this.style.background = ''; }, 3500);
+    });
+  </script>
 </body>
 </html>
